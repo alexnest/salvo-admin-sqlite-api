@@ -1,0 +1,20 @@
+# server config
+server:
+  host: "127.0.0.1:5800"
+  req_max_size: 1024
+
+# log config
+log:
+  dir: "logs"
+  file: "app_log"
+  log_level: "INFO" # DEBUG TRACE INFO  WARN ERROR
+
+# database config
+database:
+  kv_host: "data/sled" # key-value database host
+  host: "sqlite://data/sqlite/sqlite.db" # relation database host(such as sqlite, mysql, postgresql, etc.)
+
+# jwt
+jwt:
+  exp: 21600, # unit is minute , default 15 days
+  secret_key: "123456"

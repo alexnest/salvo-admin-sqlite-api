@@ -1,0 +1,13 @@
+[server]
+host = "127.0.0.1:5800"
+req_max_size = 1024
+[log]
+dir = "logs"
+file = "app_log"
+log_level = "DEBUG" # DEBUG TRACE INFO  WARN ERROR
+[database]
+host = "sqlite://data/sqlite/sqlite.db"
+kv_host = "data/sled" 
+[jwt]
+exp = 21600 # unit is minute , default 15 days
+secrect_key = "123456"
