@@ -1,13 +1,18 @@
 use crate::{
-    api::sys::{menu, role, role_menu, user::{self, stc::UserWithRole}, user_role, acl::stc},
+    api::sys::{
+        acl::stc,
+        menu, role, role_menu,
+        user::{self, stc::UserWithRole},
+        user_role,
+    },
     cache, get_pool,
     global::cst::CURRENT_USER,
-    util::jwt::Claims,
+    util::{jwt::Claims, tree::TreeNode},
     AppResult, Res,
 };
 use bcrypt;
 use salvo::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -18,12 +23,12 @@ struct LoginUser {
     uuid: String,
 }
 
+#[derive(Serialize)]
 struct UserInfo {
     permissions: Vec<String>,
     roles: Vec<String>,
     user: UserWithRole,
 }
-
 
 #[handler]
 pub async fn login(
@@ -165,7 +170,10 @@ pub async fn get_info(
     let roles = role::dao::sel_by_ids(get_pool(), &role_ids).await?;
 
     // get role key
-    let role_keys: Vec<String> = roles.iter().map(|r| r.key.as_ref().unwrap().clone()).collect();
+    let role_keys: Vec<String> = roles
+        .iter()
+        .map(|r| r.key.as_ref().unwrap().clone())
+        .collect();
 
     // init permissions
     let mut permissions = vec!["*:*:*".to_string()];
@@ -192,8 +200,15 @@ pub async fn get_info(
     // let UserInfo = {
     //     permissions: permissions ,
     //     roles: role_keys,
-    //     user: 
+    //     user:
     // }
+    let user_info = UserInfo {
+        permissions,
+        roles: role_keys,
+        user: user_with_role,
+    };
+
+    Res::suc::<UserInfo>().data(user_info).render(res);
 
     Ok(())
 }
@@ -576,4 +591,35 @@ pub async fn get_info(
 }
  */
 #[handler]
-pub async fn get_routers() {}
+pub async fn get_routers(
+    req: &mut Request,
+    depot: &mut Depot,
+    res: &mut Response,
+    _ctrl: &mut FlowCtrl,
+) -> AppResult<()> {
+    // get user base info
+    let user = depot.get::<user::stc::User>(CURRENT_USER).unwrap();
+
+    // get role ids according to the user id
+    let role_ids = user_role::dao::sel_role_ids_by_user_id(get_pool(), &user.id).await?;
+
+    // get menu ids according to the role ids
+    let menu_ids = role_menu::dao::sel_menu_ids_by_role_ids(get_pool(), &role_ids).await?;
+
+    // get menu items according to the menu ids
+    let menu_items = menu::dao::sel_items_by_ids(get_pool(), &menu_ids).await?;
+
+    // transform menu items to tree
+    let tree = TreeNode::build_tree(
+        menu_items,
+        String::from("0"),
+        |i| i.id.clone(),
+        |i| i.pid.clone(),
+        |i| i.order_num,
+    );
+
+    // response tree 
+    Res::suc::<_>().data(tree).render(res);
+
+    Ok(())
+}

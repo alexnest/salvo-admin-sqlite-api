@@ -8,7 +8,7 @@ where
     C: sqlx::Executor<'a, Database = sqlx::Sqlite>,
 {
     let qry = r#"
-        SELECT user_id FROM sys_role_user WHERE role_id = $1
+        SELECT user_id FROM sys_user_role WHERE role_id = $1
     "#;
     let info = sqlx::query_as::<Sqlite, UserId>(&qry)
         .bind(id)
@@ -22,7 +22,7 @@ where
     C: sqlx::Executor<'a, Database = sqlx::Sqlite>,
 {
     let qry = r#"
-        SELECT role_id FROM sys_role_user WHERE user_id = $1
+        SELECT role_id FROM sys_user_role WHERE user_id = $1
     "#;
     let info = sqlx::query_scalar(&qry).bind(id).fetch_all(conn).await?;
     Ok(info)
@@ -80,7 +80,7 @@ where
     C: sqlx::Executor<'a, Database = sqlx::Sqlite>,
 {
     let qry = r#"
-            DELETE FROM sys_role_user WHERE role_id = $1
+            DELETE FROM sys_user_role WHERE role_id = $1
         "#;
 
     sqlx::query(&qry).bind(role_id).execute(conn).await?;

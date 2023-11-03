@@ -26,7 +26,6 @@ impl Handler for Auth {
             tracing::info!("jwt: {}", jwt);
             let claims = Claims::decode(jwt.as_str());
 
-
             match claims {
                 Ok(claims) => {
                     tracing::info!("claims: {:?}", claims.sub);
